@@ -57,6 +57,7 @@ class ARDrone(object):
         self.lock = threading.Lock()
         self.speed = 0.2
         self.at(at_config, "general:navdata_demo", "TRUE")
+        self.at(at_config, "video:video_codec","129")
         self.video_pipe, video_pipe_other = multiprocessing.Pipe()
         self.nav_pipe, nav_pipe_other = multiprocessing.Pipe()
         self.com_pipe, com_pipe_other = multiprocessing.Pipe()
@@ -119,9 +120,8 @@ class ARDrone(object):
         self.at(at_ref, False, True)
         self.at(at_ref, False, False)
 
-    def trim(self):
-        """Flat trim the drone."""
-        self.at(at_ftrim)
+    def recover(self):
+        self.at(at_ref, False, True)
 
     def set_speed(self, speed):
         """Set the drone's speed.
@@ -169,7 +169,7 @@ class ARDrone(object):
         self.ipc_thread.stop()
         self.ipc_thread.join()
         self.lock.release()
-        
+
     def move(self,lr, fb, vv, va):
         """Makes the drone move (translate/rotate).
 
@@ -178,7 +178,7 @@ class ARDrone(object):
 	   rb -- front-back tilt: float [-1..1] negative: forwards, positive:
         	backwards
 	   vv -- vertical speed: float [-1..1] negative: go down, positive: rise
-	   va -- angular speed: float [-1..1] negative: spin left, positive: spin 
+	   va -- angular speed: float [-1..1] negative: spin left, positive: spin
         	right"""
         self.at(at_pcmd, True, lr, fb, vv, va)
 
@@ -215,7 +215,7 @@ def at_pcmd(seq, progressive, lr, fb, vv, va):
     rb -- front-back tilt: float [-1..1] negative: forwards, positive:
         backwards
     vv -- vertical speed: float [-1..1] negative: go down, positive: rise
-    va -- angular speed: float [-1..1] negative: spin left, positive: spin 
+    va -- angular speed: float [-1..1] negative: spin left, positive: spin
         right
 
     The above float values are a percentage of the maximum speed.
@@ -399,7 +399,7 @@ if __name__ == "__main__":
     import termios
     import fcntl
     import os
-    
+
     fd = sys.stdin.fileno()
 
     oldterm = termios.tcgetattr(fd)
@@ -452,4 +452,3 @@ if __name__ == "__main__":
         termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
         fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
         drone.halt()
-

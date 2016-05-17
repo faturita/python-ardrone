@@ -61,15 +61,16 @@ class ARDroneNetworkProcess(multiprocessing.Process):
             inputready, outputready, exceptready = select.select([nav_socket, video_socket, self.com_pipe], [], [])
             for i in inputready:
                 if i == video_socket:
-                    while 1:
-                        try:
-                            data = video_socket.recv(65535)
-                        except IOError:
-                            # we consumed every packet from the socket and
-                            # continue with the last one
-                            break
-                    w, h, image, t = arvideo.read_picture(data)
-                    self.video_pipe.send(image)
+                    pass
+                    # while 1:
+                    #     try:
+                    #         data = video_socket.recv(65535)
+                    #     except IOError:
+                    #         # we consumed every packet from the socket and
+                    #         # continue with the last one
+                    #         break
+                    # w, h, image, t = arvideo.read_picture(data)
+                    # self.video_pipe.send(image)
                 elif i == nav_socket:
                     while 1:
                         try:
@@ -116,4 +117,3 @@ class IPCThread(threading.Thread):
     def stop(self):
         """Stop the IPCThread activity."""
         self.stopping = True
-
