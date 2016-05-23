@@ -57,7 +57,7 @@ class ARDrone(object):
         self.lock = threading.Lock()
         self.speed = 0.2
         self.at(at_config, "general:navdata_demo", "TRUE")
-        self.at(at_config, "video:video_codec","129")
+        #self.at(at_config, "video:video_codec","129")
         self.video_pipe, video_pipe_other = multiprocessing.Pipe()
         self.nav_pipe, nav_pipe_other = multiprocessing.Pipe()
         self.com_pipe, com_pipe_other = multiprocessing.Pipe()

@@ -1,3 +1,4 @@
+# Use the libardrone library to send the recovery flag signal to the AR DRONE Parrot
 import libardrone
 drone = libardrone.ARDrone()
 import time

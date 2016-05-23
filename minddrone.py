@@ -25,6 +25,7 @@ server_address = ('0.0.0.0', 7778)
 print >> sys.stderr, 'Starting up Controller Server on %s port %s', server_address
 sock.bind(server_address)
 sock.setblocking(0)
+sock.settimeout(0.001)
 
 drone = libardrone.ARDrone()
 
@@ -56,21 +57,19 @@ try:
         cv2.drawKeypoints(frame, kps, frame, (0, 255, 0))
         drone.set_speed(0.1)
 
-        #if (i%100 == 0):
-        #drone.turn_right()
-        #elif (i%100 == 50):
-        #drone.turn_left()
-
 
         cv2.imshow("DroneView", frame)
 
 
-        # data, address = sock.recvfrom(128)
-        #
-        # if (data):
-        #     msg = json.loads(data)
-        #     if (msg.status == 'L'):
-        #         break
+        try:
+            data, address = sock.recvfrom(128)
+
+            if (data):
+                msg = json.loads(data)
+                if (msg.status == 'L'):
+                    break
+        except Exception as e:
+            pass
 
         #print (drone.navdata.battery)
         k = cv2.waitKey(1)
@@ -98,8 +97,10 @@ try:
     drone.halt()
     print ('Drone halted.')
 
+
     print ('Ending...')
-except:
+except Exception as e:
+    print "Error:"+e.message
     print ('Land Drone.')
     drone.land()
 
