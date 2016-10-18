@@ -32,6 +32,10 @@ This software was tested with the following setup:
   * OpenCV3.0.0
   * Unmodified AR.Drone firmware 1.5.1
 
+Compiling:
+---------
+
+ http://logdown.com/account/posts/386161-smart-flying
 
 License:
 --------

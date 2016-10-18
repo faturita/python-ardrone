@@ -1,3 +1,6 @@
+#coding: latin-1
+# DOES NOT WORK
+
 import time,sys
 import ps_drone
 

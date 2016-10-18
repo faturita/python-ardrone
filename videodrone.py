@@ -1,5 +1,9 @@
 #coding: latin-1
 
+# This program can be used to track the drone position using a video camera
+# and drive the drone from the video camera.
+
+
 #This works only with OpenCV 3
 # source /usr/local/bin/virtualenvwrapper.sh
 # workon cv
@@ -30,6 +34,7 @@ sock.setblocking(0)
 
 drone = libardrone.ARDrone()
 
+# Capture the image from your computer's camera.
 cap = cv2.VideoCapture(0)
 
 # cap.set(3,640)
@@ -39,7 +44,7 @@ cap = cv2.VideoCapture(0)
 
 #window = namedWindow("TheWindow",1)
 
-
+# Ready !
 drone.takeoff()
 
 print ("Taking off...")
@@ -99,7 +104,7 @@ try:
 
         #print (drone.navdata.battery)
         #cv2.imshow("Aux", 0)
-        k = cv2.waitKey(1) 
+        k = cv2.waitKey(1)
         print k
         if (k == ord('q')):
            break

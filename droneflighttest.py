@@ -15,23 +15,17 @@ import time
 import numpy as np
 import cv2
 
-#drone = libardrone.ARDrone()
+drone = libardrone.ARDrone()
 
-#cap = cv2.VideoCapture(0)
-#cap = cv2.VideoCapture('/Users/rramele/Documents/AppleStore.Subiendo.I.mov')
 cap = cv2.VideoCapture('tcp://192.168.1.1:5555')
-#cap = cv2.VideoCapture('output.avi')
-#cap = cv2.VideoCapture('/Users/rramele/Desktop/Photos/DSC_0151.MOV')
-#cap = cv2.VideoCapture('/Users/rramele/Downloads/centaur_2.mpg')
-#window = namedWindow("TheWindow",1)
 
-#drone.reset()
+drone.reset()
 
-#drone.takeoff()
+drone.takeoff()
 
-print ("Streaming...")
+print ("Taking off...")
 
-for i in range(1,1500):
+for i in range(1,800):
    # Capture frame-by-frame
    ret, frame = cap.read()
 
@@ -49,12 +43,19 @@ for i in range(1,1500):
    cv2.imshow("DroneView", frame)
 
    #print (drone.navdata.battery)
-   k = cv2.waitKey(1)
-   if k & 0xFF == ord('q'):
-      break
-   if (k == ord('a')):
-      print("Move left")
 
+   if cv2.waitKey(1) & 0xFF == ord('q'):
+      break
+
+print ('Land Drone.')
+drone.land()
+
+print ('Landing...')
+time.sleep(10)
+
+print ('Halting Drone...')
+drone.halt()
+print ('Drone halted.')
 
 print ('Ending...')
 
