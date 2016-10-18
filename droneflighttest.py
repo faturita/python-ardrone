@@ -15,49 +15,108 @@ import time
 import numpy as np
 import cv2
 
-drone = libardrone.ARDrone()
+state=0
 
-cap = cv2.VideoCapture('tcp://192.168.1.1:5555')
+try:
+    drone = libardrone.ARDrone()
 
-drone.reset()
+    cap = cv2.VideoCapture('tcp://192.168.1.1:5555')
 
-drone.takeoff()
+    drone.takeoff()
 
-print ("Taking off...")
+    detector = cv2.AKAZE_create()
 
-for i in range(1,800):
-   # Capture frame-by-frame
-   ret, frame = cap.read()
+    print ("Taking off...")
+    drone.hover()
 
-   gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-   #cv2.imwrite('01.png', gray)
+    for i in range(1,800):
+        # Capture frame-by-frame
+        ret, frame = cap.read()
 
-   #Using AKAZE descriptors.
-   #detector = cv2.AKAZE_create()
-   #(kps, descs) = detector.detectAndCompute(gray, None)
-   #print("keypoints: {}, descriptors: {}".format(len(kps), descs.shape))
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        #cv2.imwrite('01.png', gray)
 
-   # draw the keypoints and show the output image
-   #cv2.drawKeypoints(frame, kps, frame, (0, 255, 0))
+        #Using AKAZE descriptors.
 
-   cv2.imshow("DroneView", frame)
+        #(kps, descs) = detector.detectAndCompute(gray, None)
+        #print("keypoints: {}, descriptors: {}".format(len(kps), descs.shape))
 
-   #print (drone.navdata.battery)
+        # draw the keypoints and show the output image
+        #cv2.drawKeypoints(frame, kps, frame, (0, 255, 0))
 
-   if cv2.waitKey(1) & 0xFF == ord('q'):
-      break
+        cv2.imshow("DroneView", gray)
 
-print ('Land Drone.')
-drone.land()
+        #print (drone.navdata.battery)
 
-print ('Landing...')
-time.sleep(10)
+        state = i
+        drone.set_speed(0.1)
+        if (state == 200):
+            print 'Forward'
+            drone.move_forward()
+        elif (state == 250):
+            print 'Left'
+            drone.hover()
+            drone.turn_left()
+        elif (state == 350):
+            print 'Forward'
+            drone.move_forward()
+        elif (state == 380):
+            print 'Left'
+            drone.hover()
+            drone.turn_left()
+        elif (state == 420):
+            print 'Forward'
+            drone.move_forward()
+        elif (state == 456):
+            print 'Hover'
+            drone.hover()
 
-print ('Halting Drone...')
-drone.halt()
-print ('Drone halted.')
+        k = cv2.waitKey(1)
+        if k & 0xFF == ord('q'):
+          break
+        if (k == ord('a')):
+          print("Move left")
+          drone.move_left()
+        if (k == ord('d')):
+          print("Move right")
+          drone.move_right()
+        if (k == ord('w')):
+          print("Move forward")
+          drone.move_forward()
+        if (k == ord('s')):
+          print("Move backward")
+          drone.move_backward()
+        if (k == ord('c')):
+          print('Turn Right')
+          drone.turn_right()
+        if (k == ord('z')):
+          drone.turn_left()
+        if (k == ord('x')):
+          drone.hover()
+          print("Hover")
 
-print ('Ending...')
+    print ('Land Drone.')
+    drone.land()
+
+    print ('Landing...')
+    time.sleep(10)
+
+    print ('Halting Drone...')
+    drone.halt()
+    print ('Drone halted.')
+
+    print ('Ending...')
+except:
+    print ('Land Drone.')
+    drone.land()
+
+    print ('Landing...')
+    time.sleep(2)
+
+    print ('Sending the emergency state.')
+    drone.reset()
+
+    drone.halt()
 
 #When everything done, release the capture
 cap.release()

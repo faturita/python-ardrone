@@ -13,8 +13,9 @@ Getting Started:
 >>> drone.halt()
 ```
 
-The drone's property `image` contains always the latest image from the camera.
-The drone's property `navdata` contains always the latest navdata.
+In the original library, the drone's property `image` contains always the latest image from the camera.  Now that code is defunct and the parsing of the frames is not working anymore.   Anyway, you can get the streaming directly by using OpenCV.
+
+On the other hand, the drone's property `navdata` contains always the latest navdata.
 
 
 DroneStreaming.py:
@@ -30,6 +31,7 @@ This software was tested with the following setup:
 
   * Python 2.7.4
   * OpenCV3.0.0
+  * FFMPEG 3.1.4
   * Unmodified AR.Drone firmware 1.5.1
 
 Compiling:
