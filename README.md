@@ -29,7 +29,7 @@ Requirements:
 
 This software was tested with the following setup:
 
-  * Python 2.7.4
+  * Python 3.x
   * OpenCV3.0.0
   * FFMPEG 3.1.4
   * Unmodified AR.Drone firmware 1.5.1
