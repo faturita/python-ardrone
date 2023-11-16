@@ -9,7 +9,7 @@ drone.startup()
 
 drone.reset()
 while (drone.getBattery()[0]==-1): time.sleep(0.1)
-print "Battery:" + str(drone.getBattery()[0]) + "," + str(drone.getBattery()[1])
+print ("Battery:" + str(drone.getBattery()[0]) + "," + str(drone.getBattery()[1]))
 #drone.useDemoMode(True)
 #drone.getNDpackage(["demo", "vision_detect"])
 

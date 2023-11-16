@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright (c) 2011 Bastian Venthur
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -116,9 +114,9 @@ def main():
         clock.tick(50)
         pygame.display.set_caption("FPS: %.2f" % clock.get_fps())
 
-    print "Shutting down...",
+    print ("Shutting down...")
     drone.halt()
-    print "Ok."
+    print ("Ok.")
 
 if __name__ == '__main__':
     main()

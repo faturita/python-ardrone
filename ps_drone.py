@@ -110,7 +110,7 @@ class Drone(object):
 			socket.socket().close()
 		except:
 			self.printRed()
-			print "Drone is not online"
+			print ("Drone is not online")
 			self.printDefault()
 			sys.exit(9)
 
@@ -162,7 +162,7 @@ class Drone(object):
 	def shutdown(self):
 		if self.__shutdown:	sys.exit()
 		self.__shutdown = True
-		if self.debug: print "Shutdown..."
+		if self.debug: print ("Shutdown...")
 		self.land()
 		self.thrust(0,0,0,0)
 		try:	self.__NavData_pipe.send("die!")
@@ -969,7 +969,7 @@ class Drone(object):
 							self.__calltime=0
 					except IOError:	pass
 				debug, showCommands = self.__checkAndReact(debug, showCommands)		# Check for errors and things to change
-		if self.debug:	print "receiveData-Thread : committed suicide"
+		if self.debug:	print ("receiveData-Thread : committed suicide")
 		# TestMe
 		try:	self.__Config_pipe.close()
 		except:	pass
@@ -1036,7 +1036,7 @@ def vCapture(VidPipePath, parent_pipe):
 	parent_pipe.send(("VideoUp",0,0,0))
 	capture = 	cv2.VideoCapture(VidPipePath)
 	ImgCount =	0
-	if debugV:	print "CAPTURE: "+str(time.time()-t)
+	if debugV:	print ("CAPTURE: "+str(time.time()-t))
 	time.sleep(0.2)
 	parent_pipe.send(("foundCodec",0,0,0))
 	time.sleep(0.2)
@@ -1063,13 +1063,13 @@ def vCapture(VidPipePath, parent_pipe):
 			try:
 				if image.shape[:2]==(360,640) or image.shape[:2]==(368,640) or image.shape[:2]==(720,1280) or image.shape[:2]==(1080,1920):
 					codecOK = True
-					if debugV:	print "Codec seems OK"
+					if debugV:	print ("Codec seems OK")
 				else:
-					if debugV:	print "Codec failure"
+					if debugV:	print ("Codec failure")
 					parent_pipe.send(("reset",0,0,0))
 					commitsuicideV = True
 			except:
-					if debugV:	print "Codec failure"
+					if debugV:	print ("Codec failure")
 					parent_pipe.send(("reset",0,0,0))
 					commitsuicideV = True
 		if codecOK:
@@ -1103,7 +1103,7 @@ def vCapture(VidPipePath, parent_pipe):
 	vCruns = False
 	cv2.destroyAllWindows()
 	capture.release()
-	if debugV:	print "vCapture-Thread :    committed suicide"
+	if debugV:	print ("vCapture-Thread :    committed suicide")
 
 ### Process to decode the videostream in the FIFO-Pipe, stored there from main-loop.
 # Storing and decoding must not be processed in the same process, thats why decoding is external.
@@ -1119,26 +1119,26 @@ def vDecode(VidPipePath, parent_pipe, parentPID):
 	while not commitsuicideV:
 		in_pipe, out_pipe, dummy2 = select.select([parent_pipe], [], [], 0.1)		# When something is in a pipe...
 		cmd = parent_pipe.recv()
-		if showCommands:	print "** Com -> vDec : ",cmd
+		if showCommands:	print ("** Com -> vDec : ",cmd)
 		if cmd == "die!":			commitsuicideV = True
 		elif cmd == "reset":		commitsuicideV = True
 		elif cmd == "show":			showVid = 		True
 		elif cmd == "hide":			showVid =		False
 		elif cmd == "debug":
 			debugV = True
-			print "vDecode-Process :    running"
-			if vCruns:	print "vCapture-Thread :    running"
+			print ("vDecode-Process :    running")
+			if vCruns:	print ("vCapture-Thread :    running")
 		elif cmd == "undebug":		debugV =		False
 		elif cmd == "showCommands":	showCommands =	True
 		elif cmd == "hideCommands":	showCommands =	False
 	Thread_vCapture.join()
 	parent_pipe.send(("suicided",0,0,0))
 	time.sleep(0.1)
-	if debugV:	print "vDecode-Process :    committed suicide"
+	if debugV:	print ("vDecode-Process :    committed suicide")
 
 #####################################################
 def VideoReceiveWatchdog(parent_pipe,name, debugV):
-	if debugV:	print "WHATCHDOG reset von",name
+	if debugV:	print ("WHATCHDOG reset von",name)
 	parent_pipe.send(("reset",0,0,0))
 
 def mainloopV(DroneIP, VideoPort, VidPipePath, parent_pipe, parentPID):
@@ -1158,7 +1158,7 @@ def mainloopV(DroneIP, VideoPort, VidPipePath, parent_pipe, parentPID):
 		for ip in in_pipe:
 			if ip == parent_pipe:
 				cmd = parent_pipe.recv()
-				if showCommands:			print "** Com -> Vid : ",cmd
+				if showCommands:			print ("** Com -> Vid : ",cmd)
 				if cmd == "die!":
 					if inited:
 						suicide = True
@@ -1201,14 +1201,14 @@ def mainloopV(DroneIP, VideoPort, VidPipePath, parent_pipe, parentPID):
 					parent_pipe.send("hideCommands")
 				elif cmd == "debug":
 					debugV = True
-					print "Video-Process :      running"
+					print ("Video-Process :      running")
 					parent_pipe.send("debug")
 				elif cmd == "undebug":
 					debugV = False
 					parent_pipe.send("undebug")
 				elif cmd == "init" and not inited and not preinited:
 					preinited = True
-					print "Initializing Video"
+					print ("Initializing Video")
 					try:
 						os.mkfifo(VidPipePath)
 						os.chmod(VidPipePath, 1411)		# dec => oct : 777 => 1411 | 666 => 1232
@@ -1218,7 +1218,7 @@ def mainloopV(DroneIP, VideoPort, VidPipePath, parent_pipe, parentPID):
 						unsureMode = False
 						foundCodec = True
 					parent_pipe.send("vDecProc")
-					print "Send vproc"
+					print ("Send vproc")
 				elif cmd == "vDecProcON":
 					rawVideoFrame		= ""
 					VidStreamSnippet	= ""
@@ -1227,7 +1227,7 @@ def mainloopV(DroneIP, VideoPort, VidPipePath, parent_pipe, parentPID):
 					foundCodec			= False
 					searchCodecTime		= 0
 					if not vstream_pipe:
-						print "Starting Video Pipe"
+						print ("Starting Video Pipe")
 						vstream_pipe = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 						vstream_pipe.setblocking(0)
 						vstream_pipe.connect_ex((DroneIP,VideoPort))
@@ -1237,7 +1237,7 @@ def mainloopV(DroneIP, VideoPort, VidPipePath, parent_pipe, parentPID):
 					inited = True
 					preinited = False
 					unsureMode = True
-					print "Pipe Completely open"
+					print ("Pipe Completely open")
 				elif cmd == "uninit" and inited:
 					parent_pipe.send("vDecProcKill")
 				elif cmd == "vd died":
@@ -1302,9 +1302,9 @@ def mainloopV(DroneIP, VideoPort, VidPipePath, parent_pipe, parentPID):
 								iFrame				= False
 								VidStreamSnippet	= videoPackage
 								if debugV:
-									print "*** Odd h264 Frametype: ",FrameCount,
-									print videoPackage[30:50].encode("hex")
-									print " - ",videoPackage[31:40].find("\x00\x00\x00"),ord(videoPackage[30])
+									print ("*** Odd h264 Frametype: ",FrameCount,)
+									print (videoPackage[30:50].encode("hex"))
+									print (" - ",videoPackage[31:40].find("\x00\x00\x00"),ord(videoPackage[30]))
 						elif not unsureMode:
 							VidStreamSnippet+=videoPackage		# Merging video-snippets
 
@@ -1313,7 +1313,7 @@ def mainloopV(DroneIP, VideoPort, VidPipePath, parent_pipe, parentPID):
 						# An MPEG4-Stream is not confirmed. Boost or fallback to savemode.
 						lenRawVideoFrame	= len(rawVideoFrame)
 
-						print slowVideo, frameStart, saveVideo, foundCodec, lenRawVideoFrame
+						print (slowVideo, frameStart, saveVideo, foundCodec, lenRawVideoFrame)
 
 						if not saveVideo and unsureMode and frameStart and lastIFrame and lenRawVideoFrame>0:
 							if not searchCodecTime:
@@ -1326,20 +1326,20 @@ def mainloopV(DroneIP, VideoPort, VidPipePath, parent_pipe, parentPID):
 						elif not saveVideo and frameStart and not unsureMode and not foundCodec and lenRawVideoFrame>0:
 							# Boost Frames
 							boost=((1024*512)/len(VidStreamSnippet))+1
-							print "Boost IN", len(VidStreamSnippet)
-							print rawVideoFrame
+							print ("Boost IN", len(VidStreamSnippet))
+							print (rawVideoFrame)
 							for i in range(0,boost):
-								try: print "Writing info"; write2pipe.write(rawVideoFrame); print "Done"
-								except: print "Boost ERROR"
+								try: print ("Writing info"; write2pipe.write(rawVideoFrame)); print ("Done")
+								except: print ("Boost ERROR")
 							burstFrameCount+=1
 							# Give up after to much tries
 							if burstFrameCount>10:
 								parent_pipe.send(("reset",0,0,0))
 								time.sleep(0.2)
 								burstFrameCount=0
-								if debugV: print "Too many pictures send while guessing the codec. Resetting."
+								if debugV: print ("Too many pictures send while guessing the codec. Resetting.")
 
-							print "Done confirming the codec"
+							print ("Done confirming the codec")
 
 						# Normal Pipeing
 						elif not slowVideo and frameStart and (saveVideo or foundCodec) and lenRawVideoFrame>0:
@@ -1347,8 +1347,8 @@ def mainloopV(DroneIP, VideoPort, VidPipePath, parent_pipe, parentPID):
 							if burstFrameCount==1:
 								try:
 								   write2pipe.write(rawVideoFrame)
-								   print "Writing video"
-								except: print "Pipe Error"
+								   print ("Writing video")
+								except: print ("Pipe Error")
 
 						# Just show the I-Frame for slow-video-mode (and repeat for less delay in midVideo()-mode)
 						elif not saveVideo and foundCodec and slowVideo and lastIFrame and lenRawVideoFrame>0:
@@ -1358,7 +1358,7 @@ def mainloopV(DroneIP, VideoPort, VidPipePath, parent_pipe, parentPID):
 
 
 	try:
-		print "Shutting down pipeline"
+		print ("Shutting down pipeline")
 		vstream_pipe.shutdown(socket.SHUT_RDWR)
 		vstream_pipe.close()
 	except:	pass
@@ -1374,7 +1374,7 @@ def mainloopV(DroneIP, VideoPort, VidPipePath, parent_pipe, parentPID):
 	except:	pass
 	try:	os.remove(VidPipePath)
 	except:	pass
-	if debugV:	print "Video-Process :      committed suicide"
+	if debugV:	print ("Video-Process :      committed suicide")
 	try:	vstream_pipe.close()
 	except:	pass
 
@@ -1437,7 +1437,7 @@ def decode_Header(data):
 ##### ID = 0 ### "demo" #######################################################
 def decode_ID0(packet):		# NAVDATA_DEMO_TAG
 	dataset = struct.unpack_from("HHIIfffifffIffffffffffffIIffffffffffff", packet, 0)
-	if dataset[1] != 148:		print "*** ERROR : Navdata-Demo-Options-Package (ID=0) has the wrong size !!!"
+	if dataset[1] != 148:		print ("*** ERROR : Navdata-Demo-Options-Package (ID=0) has the wrong size !!!")
 	demo=[[0,0,0,0,0,0,0,0,0,0,0,0],0,[0,0,0],0,[0,0,0],0,[0,0,0,0,0,0,0,0,0],[0,0,0],0,0,[0,0,0,0,0,0,0,0,0],[0,0,0]]
 	demo[0][ 0] = dataset[2]>>15&1	# DEFAULT			(bool)
 	demo[0][ 1] = dataset[2]>>16&1	# INIT				(bool)
@@ -1471,7 +1471,7 @@ def decode_ID0(packet):		# NAVDATA_DEMO_TAG
 ##### ID = 1 ### "time" #######################################################
 def decode_ID1(packet):			#NAVDATA_TIME_TAG
 	dataset = struct.unpack_from("HHI", packet, 0)
-	if dataset[1] != 8:		print "*** ERROR : navdata-time-Options-Package (ID=1) has the wrong size !!!"
+	if dataset[1] != 8:		print ("*** ERROR : navdata-time-Options-Package (ID=1) has the wrong size !!!")
 	time=[0.0]
 	# Value: 11 most significant bits represent the seconds, and the 21 least significant bits represent the microseconds.
 	for i in range(0,21,1):		time[0] += ((dataset[2]>>i&1)*(2**i))		# Calculating the millisecond-part
@@ -1482,7 +1482,7 @@ def decode_ID1(packet):			#NAVDATA_TIME_TAG
 ##### ID = 2 ### "raw_measures" ################################################
 def decode_ID2(packet):			#NAVDATA_RAW_MEASURES_TAG
 	dataset = struct.unpack_from("HHHHHhhhhhIHHHHHHHHHHHHhh", packet, 0)
-	if dataset[1] != 52:		print "*** ERROR : navdata-raw_measures-Options-Package (ID=2) has the wrong size !!!"
+	if dataset[1] != 52:		print ("*** ERROR : navdata-raw_measures-Options-Package (ID=2) has the wrong size !!!")
 	raw_measures = [[0,0,0],[0,0,0],[0,0],0,0,0,0,0,0,0,0,0,0,0,0,0]
 	for i in range(0,3,1):	raw_measures[0][i] = dataset[2+i]	# raw_accs[xyz]			filtered accelerometer-datas [LSB]	(uint16)
 	for i in range(0,3,1):	raw_measures[1][i] = dataset[5+i]	# raw_gyros[xyz]		filtered gyrometer-datas [LSB]		(int16)
@@ -1505,7 +1505,7 @@ def decode_ID2(packet):			#NAVDATA_RAW_MEASURES_TAG
 ##### ID = 3 ### "phys_measures" ##############################################
 def decode_ID3(packet):  		#NAVDATA_PHYS_MEASURES_TAG
 	dataset = struct.unpack_from("HHfHffffffIII", packet, 0)
-	if dataset[1] != 46:		print "*** ERROR : navdata-phys_measures-Options-Package (ID=3) has the wrong size !!!"
+	if dataset[1] != 46:		print ("*** ERROR : navdata-phys_measures-Options-Package (ID=3) has the wrong size !!!")
 	phys_measures = [0,0,[0,0,0],[0,0,0],0,0,0]
 	phys_measures[0] = dataset[2]	#float32   accs_temp
 	phys_measures[1] = dataset[3]	#uint16    gyro_temp
@@ -1520,7 +1520,7 @@ def decode_ID3(packet):  		#NAVDATA_PHYS_MEASURES_TAG
 ##### ID = 4 ### "gyros_offsets" ##############################################
 def decode_ID4(packet):  		#NNAVDATA_GYROS_OFFSETS_TAG
 	dataset = struct.unpack_from("HHfff", packet, 0)
-	if dataset[1] != 16:		print "*** ERROR : navdata-gyros_offsets-Options-Package (ID=4) has the wrong size !!!"
+	if dataset[1] != 16:		print ("*** ERROR : navdata-gyros_offsets-Options-Package (ID=4) has the wrong size !!!")
 	gyros_offsets = [0,0,0]
 	for i in range (0,3,1):		gyros_offsets[i]=dataset[i+2]	# offset_g[xyz]				in deg/s					(float)
 	return(gyros_offsets)
@@ -1528,7 +1528,7 @@ def decode_ID4(packet):  		#NNAVDATA_GYROS_OFFSETS_TAG
 ##### ID = 5 ### "euler_angles" ###############################################
 def decode_ID5(packet):			#NAVDATA_EULER_ANGLES_TAG
 	dataset = struct.unpack_from("HHff", packet, 0)
-	if dataset[1] != 12:		print "*** ERROR : navdata-euler_angles-Options-Package (ID=5) has the wrong size !!!"
+	if dataset[1] != 12:		print ("*** ERROR : navdata-euler_angles-Options-Package (ID=5) has the wrong size !!!")
 	euler_angles = [0,0]
 	euler_angles[0] = dataset[2]	#float32   theta_a (head/back)
 	euler_angles[1] = dataset[3]	#float32   phi_a   (sides)
@@ -1537,7 +1537,7 @@ def decode_ID5(packet):			#NAVDATA_EULER_ANGLES_TAG
 ##### ID = 6 ### "references" #################################################
 def decode_ID6(packet):			#NAVDATA_REFERENCES_TAG
 	dataset = struct.unpack_from("HHiiiiiiiiffffffIfffffI", packet, 0)
-	if dataset[1] != 88:		print "*** ERROR : navdata-references-Options-Package (ID=6) has the wrong size !!!"
+	if dataset[1] != 88:		print ("*** ERROR : navdata-references-Options-Package (ID=6) has the wrong size !!!")
 	references = [[0,0,0],[0,0],[0,0,0],[0.0,0.0],[0.0,0.0],[0.0,0.0],0,[0.0,0.0,0.0,0.0,0.0,0]]
 	references[0][0] = dataset[2]		#ref_theta  	Theta_ref_embedded [milli-deg]	(int32)
 	references[0][1] = dataset[3]		#ref_phi		Phi_ref_embedded [milli-deg]	(int32)
@@ -1565,7 +1565,7 @@ def decode_ID6(packet):			#NAVDATA_REFERENCES_TAG
 ##### ID = 7 ### "trims" ######################################################
 def decode_ID7(packet):			#NAVDATA_TRIMS_TAG
 	dataset = struct.unpack_from("HHfff", packet, 0)
-	if dataset[1] != 16:		print "*** ERROR : navdata-trims-Options-Package (ID=7) has the wrong size !!!"
+	if dataset[1] != 16:		print ("*** ERROR : navdata-trims-Options-Package (ID=7) has the wrong size !!!")
 	trims = [0,0,0]
 	trims[0] = dataset[2]	#  angular_rates_trim									(float)
 	trims[1] = dataset[3]	#  euler_angles_trim_theta	[milli-deg]					(float)
@@ -1575,7 +1575,7 @@ def decode_ID7(packet):			#NAVDATA_TRIMS_TAG
 ##### ID = 8 ### "rc_references" ##############################################
 def decode_ID8(packet):			#NAVDATA_RC_REFERENCES_TAG
 	dataset = struct.unpack_from("HHiiiii", packet, 0)
-	if dataset[1] != 24:		print "*** ERROR : navdata-rc_references-Options-Package (ID=8) has the wrong size !!!"
+	if dataset[1] != 24:		print ("*** ERROR : navdata-rc_references-Options-Package (ID=8) has the wrong size !!!")
 	rc_references = [0,0,0,0,0]
 	rc_references[0] = dataset[2]	#  rc_ref_pitch		Pitch_rc_embedded			(int32)
 	rc_references[1] = dataset[3]	#  rc_ref_roll		Roll_rc_embedded			(int32)
@@ -1588,7 +1588,7 @@ def decode_ID8(packet):			#NAVDATA_RC_REFERENCES_TAG
 def decode_ID9(packet):			#NAVDATA_PWM_TAG
 	dataset = struct.unpack_from("HHBBBBBBBBffffiiifiiifHHHHff", packet, 0)
 	if dataset[1] != 76 and dataset[1] != 92:   #92 since firmware 2.4.8 ?
-		print "*** ERROR : navdata-navdata_pwm-Options-Package (ID=9) has the wrong size !!!"
+		print ("*** ERROR : navdata-navdata_pwm-Options-Package (ID=9) has the wrong size !!!")
 		#print "Soll: 76     Ist:",dataset[1]
 	pwm = [[0,0,0,0],[0,0,0,0],0.0,0.0,0.0,0.0,[0,0,0],0.0,[0,0,0,0.0],[0,0,0,0],0.0,0.0]
 	for i in range(0,4,1):	pwm[0][i] = dataset[2+i]	#  motor1/2/3/4		[Pulse-width mod]	(uint8)
@@ -1614,7 +1614,7 @@ def decode_ID9(packet):			#NAVDATA_PWM_TAG
 ##### ID = 10 ### "altitude" ###################################################
 def decode_ID10(packet):		#NAVDATA_ALTITUDE_TAG
 	dataset = struct.unpack_from("HHifiiffiiiIffI", packet, 0)
-	if dataset[1] != 56:		print "*** ERROR : navdata-navdata_altitude-Options-Package (ID=10) has the wrong size !!!"
+	if dataset[1] != 56:		print ("*** ERROR : navdata-navdata_altitude-Options-Package (ID=10) has the wrong size !!!")
 	altitude = [0,0.0,0,0,0.0,0.0,[0,0,0],0,[0,0],0]
 	altitude[0] = dataset[2]			# altitude_vision	[mm]					(int32)
 	altitude[1] = dataset[3]			# altitude_vz		[mm/s]					(float)
@@ -1633,7 +1633,7 @@ def decode_ID10(packet):		#NAVDATA_ALTITUDE_TAG
 ##### ID = 11 ### "vision_raw" #################################################
 def decode_ID11(packet):		#NAVDATA_VISION_RAW_TAG
 	dataset = struct.unpack_from("HHfff", packet, 0)
-	if dataset[1] != 16:	print "*** ERROR : navdata-vision_raw-Options-Package (ID=11) has the wrong size !!!"
+	if dataset[1] != 16:	print ("*** ERROR : navdata-vision_raw-Options-Package (ID=11) has the wrong size !!!")
 	vision_raw = [0,0,0]
 	for i in range (0,3,1):		vision_raw[i] = dataset[2+i]	#  vision_tx_raw (xyz)				(float)
 	return(vision_raw)
@@ -1641,7 +1641,7 @@ def decode_ID11(packet):		#NAVDATA_VISION_RAW_TAG
 ##### ID = 12 ### "vision_of" #################################################
 def decode_ID12(packet):		#NAVDATA_VISION_OF_TAG
 	dataset = struct.unpack_from("HHffffffffff", packet, 0)
-	if dataset[1] != 44:	print "*** ERROR : navdata-vision_of-Options-Package (ID=12) has the wrong size !!!"
+	if dataset[1] != 44:	print ("*** ERROR : navdata-vision_of-Options-Package (ID=12) has the wrong size !!!")
 	vision_of = [[0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0]]
 	for i in range (0,5,1):		vision_of[0][i] = dataset[2+i]	#  of_dx[5]							(float)
 	for i in range (0,5,1):		vision_of[1][i] = dataset[7+i]	#  of_dy[5]							(float)
@@ -1650,7 +1650,7 @@ def decode_ID12(packet):		#NAVDATA_VISION_OF_TAG
 ##### ID = 13 ### "vision" #####################################################
 def decode_ID13(packet):		#NAVDATA_VISION_TAG
 	dataset = struct.unpack_from("HHIiffffifffiIffffffIIff", packet, 0)
-	if dataset[1] != 92:	print "*** ERROR : navdata-vision-Options-Package (ID=13) has the wrong size !!!"
+	if dataset[1] != 92:	print ("*** ERROR : navdata-vision-Options-Package (ID=13) has the wrong size !!!")
 	vision=[0,0,0.0,0.0,0.0,0.0,0,[0.0,0.0,0.0],0,0.0,[0.0,0.0,0.0],[0.0,0.0,0.0],0,0,[0.0,0.0]]
 	vision[0] = dataset[2]				# vision_state FIXME: What are the meanings of the tags ?
 	vision[1] = dataset[3]				# vision_misc							(int32)
@@ -1680,7 +1680,7 @@ def decode_ID13(packet):		#NAVDATA_VISION_TAG
 ##### ID = 14 ### "vision_perf" ###############################################
 def decode_ID14(packet):		#NAVDATA_VISION_PERF_TAG
 	dataset = struct.unpack_from("HHffffffffffffffffffffffffff", packet, 0)
-	if dataset[1] != 108:		print "*** ERROR : navdata-vision_of-Options-Package (ID=14) has the wrong size !!!"
+	if dataset[1] != 108:		print ("*** ERROR : navdata-vision_of-Options-Package (ID=14) has the wrong size !!!")
 	vision_perf=[0.0,0.0,0.0,0.0,0.0,0.0,[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]]
 	vision_perf[0] = dataset[2]				# time_szo								(float)
 	vision_perf[1] = dataset[3]				# time_corners							(float)
@@ -1695,7 +1695,7 @@ def decode_ID14(packet):		#NAVDATA_VISION_PERF_TAG
 ##### ID = 15 ### "trackers_send" #############################################
 def decode_ID15(packet):  		#NAVDATA_TRACKERS_SEND_TAG
 	dataset = struct.unpack_from("HHiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii", packet, 0)
-	if dataset[1] != 364:		print "*** ERROR : navdata-trackers_send-Options-Package (ID=15) has the wrong size !!!"
+	if dataset[1] != 364:		print ("*** ERROR : navdata-trackers_send-Options-Package (ID=15) has the wrong size !!!")
 	DEFAULT_NB_TRACKERS_WIDTH  = 6
 	DEFAULT_NB_TRACKERS_HEIGHT = 5
 	limit = DEFAULT_NB_TRACKERS_WIDTH*DEFAULT_NB_TRACKERS_HEIGHT
@@ -1710,7 +1710,7 @@ def decode_ID15(packet):  		#NAVDATA_TRACKERS_SEND_TAG
 ##### ID = 16 ### "vision_detect" #############################################
 def decode_ID16(packet):  		#NAVDATA_VISION_DETECT_TAG
 	dataset = struct.unpack_from("HHIIIIIIIIIIIIIIIIIIIIIIIIIffffIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII", packet, offsetND)
-	if dataset[1] != 328:	print "*** ERROR : navdata-vision_detect-Package (ID=16) has the wrong size !!!"
+	if dataset[1] != 328:	print ("*** ERROR : navdata-vision_detect-Package (ID=16) has the wrong size !!!")
 	vision_detect = [0,[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0.0,0.0,0.0,0.0],[[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]],[[0.0,0.0,0.0],[0.0,0.0,0.0],[0.0,0.0,0.0],[0.0,0.0,0.0]],[0,0,0,0]]
 	#Max marker detection in one picture: 4
 	vision_detect[0] = dataset[2]									 		# nb_detected						(uint32)
@@ -1731,14 +1731,14 @@ def decode_ID16(packet):  		#NAVDATA_VISION_DETECT_TAG
 ##### ID = 17 ### "watchdog" ###################################################
 def decode_ID17(packet):  		#NAVDATA_WATCHDOG_TAG
 	dataset = struct.unpack_from("HHI", packet, offsetND)
-	if dataset[1] != 8:	print "*** ERROR : navdata-watchdog-Package (ID=17) has the wrong size !!!"
+	if dataset[1] != 8:	print ("*** ERROR : navdata-watchdog-Package (ID=17) has the wrong size !!!")
 	watchdog = dataset[2]		# watchdog			Watchdog controll [-]				(uint32)
 	return(watchdog)
 
 ##### ID = 18 ### "adc_data_frame" #############################################
 def decode_ID18(packet):  		#NAVDATA_ADC_DATA_FRAME_TAG
 	dataset = struct.unpack_from("HHIBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB", packet, offsetND)
-	if dataset[1] != 40:	print "*** ERROR : navdata-adc_data_frame-Package (ID=18) has the wrong size !!!"
+	if dataset[1] != 40:	print ("*** ERROR : navdata-adc_data_frame-Package (ID=18) has the wrong size !!!")
 	adc_data_frame = [0,[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]
 	adc_data_frame[0] = dataset[2]									# version								(uint32)
 	for i in range (0,32,1):	adc_data_frame[1][i] = dataset[3+i]	# data_frame[32]						(uint8)
@@ -1747,7 +1747,7 @@ def decode_ID18(packet):  		#NAVDATA_ADC_DATA_FRAME_TAG
 ##### ID = 19 ### "video_stream" ###############################################
 def decode_ID19(packet):		#NAVDATA_VIDEO_STREAM_TAG
 	dataset = struct.unpack_from("HHBIIIIfIIIiiiiiII", packet, offsetND)
-	if dataset[1] != 65:	print "*** ERROR : navdata-video_stream-Package (ID=19) has the wrong size !!!"
+	if dataset[1] != 65:	print ("*** ERROR : navdata-video_stream-Package (ID=19) has the wrong size !!!")
 	video_stream = [0,0,0,0,0,0.0,0,0,0,[0,0,0,0,0],0,0]
 	video_stream[0] = dataset[2]	# quant   		quantizer reference used to encode [1:31]   				(uint8)
 	video_stream[1] = dataset[3]	# frame_size	frame size in bytes   										(uint32)

@@ -100,7 +100,7 @@ try:
 
     print ('Ending...')
 except Exception as e:
-    print "Error:"+e.message
+    print ("Error:"+e.message)
     print ('Land Drone.')
     drone.land()
 

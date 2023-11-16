@@ -1,16 +1,11 @@
 #coding: latin-1
 
-#This works only with OpenCV 3
-# source /usr/local/bin/virtualenvwrapper.sh
-# workon cv
 import cv2
 
 
 #cap = cv2.VideoCapture(0)
-#cap = cv2.VideoCapture('/Users/rramele/Documents/AppleStore.Subiendo.I.mov')
-#cap = cv2.VideoCapture('tcp://192.168.1.1:5555')
-cap = cv2.VideoCapture('tcp://192.168.0.3/cgi-bin/fwstream.cgi?FwModId=0&PortId=1&PauseTime=0&FwCgiVer=0x0001')
-#cap = cv2.VideoCapture('rtsp://192.168.0.3/cam0_0')
+cap = cv2.VideoCapture('tcp://192.168.1.1:5555')
+#cap = cv2.VideoCapture('tcp://192.168.0.3/cgi-bin/fwstream.cgi?FwModId=0&PortId=1&PauseTime=0&FwCgiVer=0x0001')
 
 print ("Connecting..")
 

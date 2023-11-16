@@ -318,7 +318,7 @@ def at(command, seq, params):
             param_str += ',"'+p+'"'
     msg = "AT*%s=%i%s\r" % (command, seq, param_str)
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.sendto(msg, ("192.168.1.1", ARDRONE_COMMAND_PORT))
+    sock.sendto(msg.encode('utf-8'), ("192.168.1.1", ARDRONE_COMMAND_PORT))
 
 def f2i(f):
     """Interpret IEEE-754 floating-point value as signed integer.
@@ -383,7 +383,8 @@ def decode_navdata(packet):
             offset += struct.calcsize("c")
         # navdata_tag_t in navdata-common.h
         if id_nr == 0:
-            values = struct.unpack_from("IIfffIfffI", "".join(values))
+            #print(values)
+            values = struct.unpack_from("IIfffIfffI", b''.join(values))
             values = dict(zip(['ctrl_state', 'battery', 'theta', 'phi', 'psi', 'altitude', 'vx', 'vy', 'vz', 'num_frames'], values))
             # convert the millidegrees into degrees and round to int, as they
             # are not so precise anyways
@@ -417,7 +418,7 @@ if __name__ == "__main__":
             try:
                 c = sys.stdin.read(1)
                 c = c.lower()
-                print "Got character", c
+                print("Got character:" + str(c))
                 if c == 'a':
                     drone.move_left()
                 if c == 'd':

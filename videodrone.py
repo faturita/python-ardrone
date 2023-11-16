@@ -105,7 +105,7 @@ try:
         #print (drone.navdata.battery)
         #cv2.imshow("Aux", 0)
         k = cv2.waitKey(1)
-        print k
+        print (k)
         if (k == ord('q')):
            break
         if (k == ord('a')):
