@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AR.Drone 2.0 Control</title>
+<style>
+  /* ── Reset & Base ──────────────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:          #0d1117;
+    --surface:     #161b22;
+    --border:      #30363d;
+    --green:       #39d353;
+    --green-dim:   #1a6929;
+    --green-glow:  #39d35366;
+    --red:         #f85149;
+    --red-dim:     #6a1e1a;
+    --red-glow:    #f8514966;
+    --yellow:      #e3b341;
+    --yellow-dim:  #5a470d;
+    --blue:        #58a6ff;
+    --text:        #c9d1d9;
+    --text-dim:    #8b949e;
+    --font-mono:   'JetBrains Mono', 'Courier New', monospace;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    overflow: hidden;
+  }
+
+  /* ── Layout ────────────────────────────────────────────────────────────── */
+  .app {
+    display: grid;
+    grid-template-rows: 44px 1fr 64px;
+    height: 100vh;
+    gap: 0;
+  }
+
+  /* ── Header ────────────────────────────────────────────────────────────── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    gap: 16px;
+  }
+
+  .header-title {
+    color: var(--green);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .header-ip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-dim);
+    font-size: 12px;
+  }
+
+  .header-ip input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--blue);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 3px 8px;
+    width: 130px;
+    outline: none;
+  }
+  .header-ip input:focus { border-color: var(--blue); }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--red);
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+  .status-dot.connected {
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green-glow);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 4px var(--green-glow); }
+    50%       { box-shadow: 0 0 12px var(--green); }
+  }
+
+  .header-speed {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-dim);
+    font-size: 11px;
+  }
+  .header-speed input[type=range] {
+    width: 80px;
+    accent-color: var(--green);
+    cursor: pointer;
+  }
+  #speed-label { color: var(--green); min-width: 30px; }
+
+  /* ── Main area ─────────────────────────────────────────────────────────── */
+  main {
+    display: grid;
+    grid-template-columns: 200px 1fr 200px;
+    align-items: center;
+    gap: 0;
+    padding: 12px 16px;
+    overflow: hidden;
+  }
+
+  /* ── Control Pads ──────────────────────────────────────────────────────── */
+  .pad {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px;
+  }
+
+  .pad-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .pad-row {
+    display: flex;
+    gap: 6px;
+  }
+
+  /* ── Drone Buttons ─────────────────────────────────────────────────────── */
+  .btn {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-dim);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.1s, border-color 0.1s, color 0.1s, box-shadow 0.1s;
+    gap: 2px;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .btn .icon { font-size: 18px; line-height: 1; }
+  .btn .key  {
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    opacity: 0.6;
+  }
+  .btn .label {
+    font-size: 8px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    opacity: 0.7;
+  }
+
+  /* Pad buttons (square-ish) */
+  .btn-pad { width: 56px; height: 56px; }
+  .btn-pad.spacer { opacity: 0; pointer-events: none; }
+
+  /* Active state */
+  .btn.active,
+  .btn:active {
+    background: var(--green-dim);
+    border-color: var(--green);
+    color: var(--green);
+    box-shadow: 0 0 12px var(--green-glow);
+  }
+  .btn.active .key,
+  .btn:active .key  { color: var(--green); opacity: 1; }
+
+  /* ── Video Frame ───────────────────────────────────────────────────────── */
+  .video-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    height: 100%;
+    justify-content: center;
+  }
+
+  .video-frame {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: #050508;
+    width: 100%;
+    max-width: 720px;
+    aspect-ratio: 16/9;
+    box-shadow: 0 0 24px rgba(0,0,0,0.6);
+  }
+
+  /* Corner brackets for HUD feel */
+  .video-frame::before,
+  .video-frame::after {
+    content: '';
+    position: absolute;
+    width: 20px; height: 20px;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .video-frame::before {
+    top: 8px; left: 8px;
+    border-top: 2px solid var(--green);
+    border-left: 2px solid var(--green);
+  }
+  .video-frame::after {
+    bottom: 8px; right: 8px;
+    border-bottom: 2px solid var(--green);
+    border-right: 2px solid var(--green);
+  }
+
+  .video-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+
+  /* HUD overlay */
+  .hud {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 3;
+  }
+  .hud-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px; height: 20px;
+    opacity: 0.5;
+  }
+  .hud-center::before,
+  .hud-center::after {
+    content: '';
+    position: absolute;
+    background: var(--green);
+    border-radius: 1px;
+  }
+  .hud-center::before { top:50%; left:0; right:0; height:1px; margin-top:-0.5px; }
+  .hud-center::after  { left:50%; top:0; bottom:0; width:1px; margin-left:-0.5px; }
+
+  .hud-text {
+    position: absolute;
+    font-size: 10px;
+    color: var(--green);
+    opacity: 0.7;
+    letter-spacing: 1px;
+  }
+  .hud-tl { top: 12px; left: 32px; }
+  .hud-tr { top: 12px; right: 32px; text-align: right; }
+  .hud-bl { bottom: 12px; left: 32px; }
+  .hud-br { bottom: 12px; right: 32px; text-align: right; }
+
+  /* ── Footer ────────────────────────────────────────────────────────────── */
+  footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 0 20px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+
+  .btn-action {
+    height: 40px;
+    padding: 0 20px;
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: 1px solid;
+    transition: all 0.15s;
+    outline: none;
+  }
+
+  .btn-takeoff {
+    background: var(--green-dim);
+    border-color: var(--green);
+    color: var(--green);
+  }
+  .btn-takeoff:hover {
+    background: #2a5a2a;
+    box-shadow: 0 0 12px var(--green-glow);
+  }
+
+  .btn-hover-action {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--text-dim);
+  }
+  .btn-hover-action:hover {
+    border-color: var(--blue);
+    color: var(--blue);
+  }
+
+  .btn-land {
+    background: var(--yellow-dim);
+    border-color: var(--yellow);
+    color: var(--yellow);
+  }
+  .btn-land:hover {
+    background: #7a5a10;
+    box-shadow: 0 0 12px rgba(227,179,65,0.4);
+  }
+
+  .btn-emergency {
+    background: var(--red-dim);
+    border-color: var(--red);
+    color: var(--red);
+    animation: emg-pulse 2.5s ease-in-out infinite;
+  }
+  .btn-emergency:hover {
+    background: #8a2a26;
+    box-shadow: 0 0 16px var(--red-glow);
+    animation: none;
+  }
+  @keyframes emg-pulse {
+    0%, 100% { box-shadow: 0 0 4px var(--red-glow); }
+    50%       { box-shadow: 0 0 10px var(--red); }
+  }
+
+  /* ── Log / Status bar ──────────────────────────────────────────────────── */
+  .log-bar {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+    flex-shrink: 1;
+  }
+  .log-bar span { color: var(--green); }
+
+  /* ── Misc ──────────────────────────────────────────────────────────────── */
+  .sep { width: 1px; height: 28px; background: var(--border); }
+
+  @media (max-width: 768px) {
+    main { grid-template-columns: 160px 1fr 160px; }
+    .btn-pad { width: 46px; height: 46px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ── Header ──────────────────────────────────────────────────────────── -->
+  <header>
+    <span class="header-title">AR·DRONE 2.0</span>
+
+    <div class="header-ip">
+      <div class="status-dot" id="status-dot"></div>
+      <span>IP</span>
+      <input type="text" id="drone-ip-input" value="{{ drone_ip }}"
+             title="Drone IP address">
+    </div>
+
+    <div class="header-speed">
+      <span>SPEED</span>
+      <input type="range" id="speed-slider" min="5" max="100" value="30"
+             oninput="onSpeedChange(this.value)">
+      <span id="speed-label">30%</span>
+    </div>
+  </header>
+
+  <!-- ── Main ────────────────────────────────────────────────────────────── -->
+  <main>
+
+    <!-- Left pad: WASD – translation -->
+    <div class="pad">
+      <div class="pad-label">Move</div>
+
+      <div class="pad-row">
+        <div class="btn-pad spacer btn"></div>
+        <button class="btn btn-pad" id="btn-w"
+                onmousedown="keyPress('w')" onmouseup="keyRelease('w')"
+                ontouchstart="keyPress('w')" ontouchend="keyRelease('w')">
+          <span class="icon">▲</span>
+          <span class="key">W</span>
+          <span class="label">fwd</span>
+        </button>
+        <div class="btn-pad spacer btn"></div>
+      </div>
+
+      <div class="pad-row">
+        <button class="btn btn-pad" id="btn-a"
+                onmousedown="keyPress('a')" onmouseup="keyRelease('a')"
+                ontouchstart="keyPress('a')" ontouchend="keyRelease('a')">
+          <span class="icon">◄</span>
+          <span class="key">A</span>
+          <span class="label">left</span>
+        </button>
+        <button class="btn btn-pad" id="btn-s"
+                onmousedown="keyPress('s')" onmouseup="keyRelease('s')"
+                ontouchstart="keyPress('s')" ontouchend="keyRelease('s')">
+          <span class="icon">▼</span>
+          <span class="key">S</span>
+          <span class="label">back</span>
+        </button>
+        <button class="btn btn-pad" id="btn-d"
+                onmousedown="keyPress('d')" onmouseup="keyRelease('d')"
+                ontouchstart="keyPress('d')" ontouchend="keyRelease('d')">
+          <span class="icon">►</span>
+          <span class="key">D</span>
+          <span class="label">right</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Center: video feed -->
+    <div class="video-wrap">
+      <div class="video-frame">
+        <img id="video-img" src="/video_feed" alt="Drone camera feed">
+        <div class="hud">
+          <div class="hud-center"></div>
+          <div class="hud-text hud-tl" id="hud-state">STANDBY</div>
+          <div class="hud-text hud-tr" id="hud-speed">SPD 30%</div>
+          <div class="hud-text hud-bl" id="hud-move">HOVER</div>
+          <div class="hud-text hud-br" id="hud-time">00:00</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right pad: IJKL – altitude + yaw -->
+    <div class="pad">
+      <div class="pad-label">Alt · Yaw</div>
+
+      <div class="pad-row">
+        <div class="btn-pad spacer btn"></div>
+        <button class="btn btn-pad" id="btn-i"
+                onmousedown="keyPress('i')" onmouseup="keyRelease('i')"
+                ontouchstart="keyPress('i')" ontouchend="keyRelease('i')">
+          <span class="icon">▲</span>
+          <span class="key">I</span>
+          <span class="label">up</span>
+        </button>
+        <div class="btn-pad spacer btn"></div>
+      </div>
+
+      <div class="pad-row">
+        <button class="btn btn-pad" id="btn-j"
+                onmousedown="keyPress('j')" onmouseup="keyRelease('j')"
+                ontouchstart="keyPress('j')" ontouchend="keyRelease('j')">
+          <span class="icon">↺</span>
+          <span class="key">J</span>
+          <span class="label">yaw←</span>
+        </button>
+        <button class="btn btn-pad" id="btn-k"
+                onmousedown="keyPress('k')" onmouseup="keyRelease('k')"
+                ontouchstart="keyPress('k')" ontouchend="keyRelease('k')">
+          <span class="icon">▼</span>
+          <span class="key">K</span>
+          <span class="label">down</span>
+        </button>
+        <button class="btn btn-pad" id="btn-l"
+                onmousedown="keyPress('l')" onmouseup="keyRelease('l')"
+                ontouchstart="keyPress('l')" ontouchend="keyRelease('l')">
+          <span class="icon">↻</span>
+          <span class="key">L</span>
+          <span class="label">yaw→</span>
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ── Footer ──────────────────────────────────────────────────────────── -->
+  <footer>
+    <button class="btn-action btn-takeoff" onclick="doTakeoff()">⬆ TAKEOFF</button>
+    <button class="btn-action btn-hover-action" onclick="doHover()">◉ HOVER</button>
+    <div class="sep"></div>
+    <div class="log-bar" id="log-bar">ready · use keyboard or on-screen buttons</div>
+    <div class="sep"></div>
+    <button class="btn-action btn-land" onclick="doLand()">⬇ LAND</button>
+    <button class="btn-action btn-emergency" onclick="doEmergency()">✕ EMERGENCY</button>
+  </footer>
+
+</div>
+
+<script>
+  'use strict';
+
+  // ── State ───────────────────────────────────────────────────────────────────
+  let speed    = 0.30;
+  let active   = {};        // currently pressed keys
+  let flying   = false;
+  let elapsed  = 0;
+  let timerRef = null;
+  let sendLoop = null;
+
+  const MOVE_KEYS = new Set(['w','a','s','d','i','j','k','l']);
+
+  // ── DOM refs ────────────────────────────────────────────────────────────────
+  const $dot    = document.getElementById('status-dot');
+  const $state  = document.getElementById('hud-state');
+  const $spd    = document.getElementById('hud-speed');
+  const $move   = document.getElementById('hud-move');
+  const $clock  = document.getElementById('hud-time');
+  const $log    = document.getElementById('log-bar');
+  const $img    = document.getElementById('video-img');
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+  function log(msg) {
+    $log.innerHTML = '<span>' + new Date().toLocaleTimeString() + '</span> · ' + msg;
+  }
+
+  function setFlying(state) {
+    flying = state;
+    $state.textContent = state ? 'FLYING' : 'STANDBY';
+    if (state) {
+      elapsed = 0;
+      timerRef = setInterval(() => {
+        elapsed++;
+        const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+        const s = String(elapsed % 60).padStart(2, '0');
+        $clock.textContent = m + ':' + s;
+      }, 1000);
+    } else {
+      clearInterval(timerRef);
+      $clock.textContent = '00:00';
+    }
+  }
+
+  // ── Video connection detection ───────────────────────────────────────────────
+  $img.addEventListener('load', () => { $dot.classList.add('connected'); });
+  $img.addEventListener('error', () => { $dot.classList.remove('connected'); });
+
+  // Poll video liveness via a tiny HEAD request every 3 s
+  setInterval(() => {
+    fetch('/video_feed', { method: 'HEAD' })
+      .then(() => $dot.classList.add('connected'))
+      .catch(() => $dot.classList.remove('connected'));
+  }, 3000);
+
+  // ── Speed slider ────────────────────────────────────────────────────────────
+  function onSpeedChange(val) {
+    speed = parseInt(val) / 100;
+    document.getElementById('speed-label').textContent = val + '%';
+    $spd.textContent = 'SPD ' + val + '%';
+  }
+
+  // ── Movement vector ─────────────────────────────────────────────────────────
+  function getVector() {
+    let lr = 0, fb = 0, vv = 0, va = 0;
+    if (active['w']) fb = -speed;
+    if (active['s']) fb =  speed;
+    if (active['a']) lr = -speed;
+    if (active['d']) lr =  speed;
+    if (active['i']) vv =  speed;
+    if (active['k']) vv = -speed;
+    if (active['j']) va = -speed;
+    if (active['l']) va =  speed;
+    return { lr, fb, vv, va };
+  }
+
+  function moveLabel() {
+    const parts = [];
+    if (active['w']) parts.push('FWD');
+    if (active['s']) parts.push('BACK');
+    if (active['a']) parts.push('LEFT');
+    if (active['d']) parts.push('RIGHT');
+    if (active['i']) parts.push('UP');
+    if (active['k']) parts.push('DOWN');
+    if (active['j']) parts.push('YAW←');
+    if (active['l']) parts.push('YAW→');
+    return parts.length ? parts.join(' ') : 'HOVER';
+  }
+
+  // ── Send commands ────────────────────────────────────────────────────────────
+  function sendMove() {
+    const v = getVector();
+    fetch('/api/move', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(v)
+    }).catch(() => {});
+    $move.textContent = moveLabel();
+  }
+
+  function sendHover() {
+    fetch('/api/hover', { method: 'POST' }).catch(() => {});
+    $move.textContent = 'HOVER';
+  }
+
+  // Continuous send while keys are held (100 ms interval)
+  function startSendLoop() {
+    if (sendLoop) return;
+    sendMove();
+    sendLoop = setInterval(sendMove, 100);
+  }
+
+  function stopSendLoop() {
+    if (sendLoop) { clearInterval(sendLoop); sendLoop = null; }
+    sendHover();
+  }
+
+  // ── Key events ───────────────────────────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.repeat) return;
+    const k = e.key.toLowerCase();
+    if (!MOVE_KEYS.has(k)) return;
+    e.preventDefault();
+    active[k] = true;
+    highlightBtn(k, true);
+    startSendLoop();
+  });
+
+  document.addEventListener('keyup', e => {
+    const k = e.key.toLowerCase();
+    if (!MOVE_KEYS.has(k)) return;
+    delete active[k];
+    highlightBtn(k, false);
+    if (Object.keys(active).length === 0) stopSendLoop();
+    else sendMove();
+  });
+
+  // ── On-screen button press / release ────────────────────────────────────────
+  function keyPress(k) {
+    active[k] = true;
+    highlightBtn(k, true);
+    startSendLoop();
+  }
+
+  function keyRelease(k) {
+    delete active[k];
+    highlightBtn(k, false);
+    if (Object.keys(active).length === 0) stopSendLoop();
+    else sendMove();
+  }
+
+  function highlightBtn(k, on) {
+    const el = document.getElementById('btn-' + k);
+    if (el) el.classList.toggle('active', on);
+  }
+
+  // ── Footer actions ───────────────────────────────────────────────────────────
+  function doTakeoff() {
+    fetch('/api/takeoff', { method: 'POST' })
+      .then(r => r.json())
+      .then(() => { setFlying(true); log('Takeoff command sent'); });
+  }
+
+  function doHover() {
+    fetch('/api/hover', { method: 'POST' })
+      .then(r => r.json())
+      .then(() => { log('Hovering'); $move.textContent = 'HOVER'; });
+  }
+
+  function doLand() {
+    fetch('/api/land', { method: 'POST' })
+      .then(r => r.json())
+      .then(() => { setFlying(false); log('Landing command sent'); });
+  }
+
+  function doEmergency() {
+    // Confirm before cutting motors in flight
+    if (flying && !confirm('Cut motors immediately?')) return;
+    fetch('/api/emergency', { method: 'POST' })
+      .then(r => r.json())
+      .then(() => {
+        setFlying(false);
+        $state.textContent = 'EMERGENCY';
+        $state.style.color = 'var(--red)';
+        log('EMERGENCY STOP sent — motors cut');
+      });
+  }
+
+  // Allow keyboard shortcut: T = takeoff, Space = hover, L = land won't conflict
+  // because L is yaw-right. Use Enter for takeoff, Escape for hover.
+  document.addEventListener('keydown', e => {
+    if (e.repeat) return;
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doTakeoff(); }
+    if (e.key === 'Escape')               { e.preventDefault(); doHover();   }
+  });
+
+  // ── IP address change ────────────────────────────────────────────────────────
+  // (Changing IP requires a server restart; just show a note)
+  document.getElementById('drone-ip-input').addEventListener('change', function() {
+    log('IP changed to ' + this.value + ' — restart server with --drone-ip to apply');
+  });
+</script>
+</body>
+</html>
