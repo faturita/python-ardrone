@@ -195,7 +195,7 @@ class VideoStream:
         self._thread.start()
 
     def _capture(self):
-        url         = f"http://{self.drone_video_ip}:8888"
+        url         = f"http://{self.drone_video_ip}:5555"
         frame_bytes = _VID_W * _VID_H * 3   # BGR24
 
         ffmpeg = shutil.which("ffmpeg")
@@ -368,7 +368,7 @@ if __name__ == "__main__":
 
     _drone_ip = args.drone_ip
     _drone_video_ip = args.drone_video_ip
-    video_url = f"http://{_drone_video_ip}:8888"
+    video_url = f"http://{_drone_video_ip}:5555"
 
     print(f"  Drone IP : {_drone_ip}")
     print(f"  Video    : {video_url}  (raw H.264 via ffmpeg)")
