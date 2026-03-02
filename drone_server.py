@@ -20,6 +20,7 @@ from flask import Flask, Response, render_template, jsonify, request
 # ─── Configuration ────────────────────────────────────────────────────────────
 
 DEFAULT_DRONE_IP   = "192.168.1.1"
+DEFAULT_DRONE_VIDEO_IP = "192.168.1.3"
 DRONE_CMD_PORT     = 5556          # AT commands (UDP)
 DRONE_NAVDATA_PORT = 5554          # Navdata (UDP)
 DRONE_VIDEO_PORT   = 5555          # Video UDP trigger / TCP stream
@@ -37,6 +38,7 @@ _seq_lock  = threading.Lock()
 _wdg_timer = None
 _cmd_sock  = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 _drone_ip  = DEFAULT_DRONE_IP
+_drone_video_ip = DEFAULT_DRONE_VIDEO_IP
 
 
 def f2i(f: float) -> int:
@@ -110,7 +112,7 @@ def cmd_init():
     nav_sock.close()
 
     vid_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    vid_sock.sendto(trigger, (_drone_ip, DRONE_VIDEO_PORT))
+    vid_sock.sendto(trigger, (_drone_video_ip, DRONE_VIDEO_PORT))
     vid_sock.close()
 
     time.sleep(0.1)
@@ -184,6 +186,7 @@ class VideoStream:
 
     def __init__(self, drone_ip: str):
         self.drone_ip = drone_ip
+        self.drone_video_ip = "192.168.1.3"
         self._frame   = None
         self._lock    = threading.Lock()
         self._thread  = threading.Thread(target=self._capture, daemon=True)
@@ -192,7 +195,7 @@ class VideoStream:
         self._thread.start()
 
     def _capture(self):
-        url         = f"http://{self.drone_ip}:5555"
+        url         = f"http://{self.drone_video_ip}:8888"
         frame_bytes = _VID_W * _VID_H * 3   # BGR24
 
         ffmpeg = shutil.which("ffmpeg")
@@ -357,12 +360,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="AR.Drone 2.0 Flask Control Server")
     parser.add_argument("--drone-ip", default=DEFAULT_DRONE_IP,
                         help="Drone IP address (default: 192.168.1.1)")
+    parser.add_argument("--drone-video-ip", default=DEFAULT_DRONE_VIDEO_IP,
+                        help="Drone IP address (default: 192.168.1.1)")
     parser.add_argument("--port", type=int, default=8000,
                         help="HTTP server port (default: 8000)")
     args = parser.parse_args()
 
     _drone_ip = args.drone_ip
-    video_url = f"http://{_drone_ip}:5555"
+    _drone_video_ip = args.drone_video_ip
+    video_url = f"http://{_drone_video_ip}:8888"
 
     print(f"  Drone IP : {_drone_ip}")
     print(f"  Video    : {video_url}  (raw H.264 via ffmpeg)")
