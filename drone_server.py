@@ -27,6 +27,9 @@ DRONE_VIDEO_PORT   = 5555          # Video UDP trigger / TCP stream
 MOVE_SPEED         = 0.3           # default movement speed  [0..1]
 WATCHDOG_INTERVAL  = 0.5           # seconds between keepalives
 
+# Video display resolution — overridden by --video-width / --video-height
+_VID_W, _VID_H = 640, 480         # Pi Camera Module default
+
 # ─── Flask app ────────────────────────────────────────────────────────────────
 
 app = Flask(__name__)
@@ -167,26 +170,23 @@ def cmd_move(lr: float = 0.0, fb: float = 0.0,
 
 # ─── Video Streaming ──────────────────────────────────────────────────────────
 
-# AR.Drone 2.0 default stream resolution
-_VID_W, _VID_H = 640, 360
-
 
 class VideoStream:
     """
-    Captures H.264 frames from the AR.Drone via an ffmpeg subprocess pipe.
+    Captures H.264 frames from a raw TCP stream via an ffmpeg subprocess pipe.
 
-    The drone serves raw H.264 over HTTP on port 5555 (no container).
-    OpenCV's VideoCapture cannot auto-detect this, so we replicate the
-    flags used in seevideo.sh:
-        ffmpeg -framedrop -infbuf -f h264 -i http://<ip>:5555 ...
-    and pipe decoded BGR frames into numpy arrays.
+    Expected source (Raspberry Pi):
+        libcamera-vid -t 0 --inline -o - | nc -l 5555
+
+    ffmpeg connects to tcp://<ip>:5555, decodes frames, and pipes BGR24
+    raw video into numpy arrays for MJPEG serving.
     """
 
     _NO_SIGNAL: bytes | None = None
 
-    def __init__(self, drone_ip: str):
+    def __init__(self, drone_ip: str, video_ip: str = None):
         self.drone_ip = drone_ip
-        self.drone_video_ip = "192.168.1.3"
+        self.video_ip = video_ip or drone_ip
         self._frame   = None
         self._lock    = threading.Lock()
         self._thread  = threading.Thread(target=self._capture, daemon=True)
@@ -195,7 +195,8 @@ class VideoStream:
         self._thread.start()
 
     def _capture(self):
-        url         = f"http://{self.drone_video_ip}:5555"
+        # Raw TCP stream from: libcamera-vid -t 0 --inline -o - | nc -l 5555
+        url         = f"tcp://{self.video_ip}:{DRONE_VIDEO_PORT}"
         frame_bytes = _VID_W * _VID_H * 3   # BGR24
 
         ffmpeg = shutil.which("ffmpeg")
@@ -361,17 +362,23 @@ if __name__ == "__main__":
     parser.add_argument("--drone-ip", default=DEFAULT_DRONE_IP,
                         help="Drone IP address (default: 192.168.1.1)")
     parser.add_argument("--drone-video-ip", default=DEFAULT_DRONE_VIDEO_IP,
-                        help="Drone IP address (default: 192.168.1.1)")
+                        help="Video source IP — Pi or drone (default: 192.168.1.3)")
+    parser.add_argument("--video-width", type=int, default=_VID_W,
+                        help=f"Video display width in pixels (default: {_VID_W})")
+    parser.add_argument("--video-height", type=int, default=_VID_H,
+                        help=f"Video display height in pixels (default: {_VID_H})")
     parser.add_argument("--port", type=int, default=8000,
                         help="HTTP server port (default: 8000)")
     args = parser.parse_args()
 
     _drone_ip = args.drone_ip
     _drone_video_ip = args.drone_video_ip
-    video_url = f"http://{_drone_video_ip}:5555"
+    _VID_W = args.video_width
+    _VID_H = args.video_height
+    video_url = f"tcp://{_drone_video_ip}:{DRONE_VIDEO_PORT}"
 
     print(f"  Drone IP : {_drone_ip}")
-    print(f"  Video    : {video_url}  (raw H.264 via ffmpeg)")
+    print(f"  Video    : {video_url}  ({_VID_W}x{_VID_H}, raw H.264 via ffmpeg)")
     print(f"  Server   : http://0.0.0.0:{args.port}")
 
     # Initialize drone FIRST (sends UDP triggers + AT config)
@@ -379,7 +386,7 @@ if __name__ == "__main__":
     cmd_init()
     time.sleep(0.5)
 
-    _video = VideoStream(_drone_ip)
+    _video = VideoStream(_drone_ip, video_ip=_drone_video_ip)
     _video.start()
 
     app.run(host="0.0.0.0", port=args.port, debug=False, threaded=True)
